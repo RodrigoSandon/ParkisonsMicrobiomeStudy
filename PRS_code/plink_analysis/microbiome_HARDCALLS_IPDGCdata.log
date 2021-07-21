@@ -1,0 +1,31 @@
+PLINK v1.90b4.4 64-bit (21 May 2017)
+Options in effect:
+  --bfile HARDCALLS_PD_september_2018_no_cousins
+  --extract mbVariantsToExtract.txt
+  --make-bed
+  --out microbiome_HARDCALLS_IPDGCdata
+  --remove-fam /data/LNG/saraB/NeuroX.fID.txt
+
+Hostname: cn0864
+Working directory: /gpfs/gsfs9/users/LNG/saraB
+Start time: Fri Jun 25 12:44:05 2021
+
+Random number seed: 1624639445
+386449 MB RAM detected; reserving 193224 MB for main workspace.
+25375550 variants loaded from .bim file.
+45866 people (25384 males, 20482 females) loaded from .fam.
+45866 phenotype values loaded from .fam.
+--extract: 244 variants remaining.
+Warning: At least 35 duplicate IDs in --extract file.
+--remove-fam: 32338 people remaining.
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 32338 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate in remaining samples is 0.948204.
+244 variants and 32338 people pass filters and QC.
+Among remaining phenotypes, 14671 are cases and 17667 are controls.
+--make-bed to microbiome_HARDCALLS_IPDGCdata.bed +
+microbiome_HARDCALLS_IPDGCdata.bim + microbiome_HARDCALLS_IPDGCdata.fam ...
+done.
+
+End time: Fri Jun 25 12:44:16 2021

@@ -1,0 +1,35 @@
+library("LDlinkR")
+snps <-"rs57676887\n
+rs72864816\n
+rs75448022\n
+rs61267978\n
+rs11661723\n
+rs57004694\n
+rs11878088\n
+rs8096953\n
+rs56367012\n
+rs61277346\n
+rs67307009\n
+rs59596655\n
+rs11875989\n
+rs7235290\n
+rs66960257\n
+rs11664247\n
+rs11662417\n
+rs67260757\n
+rs6506380\n
+rs11081230\n
+rs68088098\n
+rs11874784\n
+rs55645017\n
+rs7230458\n
+rs11874119\n
+rs11081231\n"
+
+##This will need to be bashed
+
+#curl -k -H "Content-Type: application/json" -X POST -d '{"snps": "rs57676887\nrs72864816\nrs75448022\nrs61267978\nrs11661723\nrs57004694\nrs11878088\nrs8096953\nrs56367012\nrs61277346\nrs67307009\nrs59596655\nrs11875989\nrs7235290\nrs66960257\nrs11664247\nrs11662417\nrs67260757\nrs6506380\nrs11081230\nrs68088098\nrs11874784\nrs55645017\nrs7230458\nrs11874119\nrs11081231\n", "pop": "YRI", "r2_threshold": "0.3", "maf_threshold": "0.01"}' 'https://ldlink.nci.nih.gov/LDlinkRest/snpclip?token=8a70a1b4adf8'
+
+
+
+

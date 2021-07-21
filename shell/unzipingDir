@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for f in /Volumes/Passport/MiBioGen_QmbQTL_summary_genus/*.gz;
+ do FILENAME=${f%%.*};
+  echo gunzip -k ${FILENAME};
+ done;
