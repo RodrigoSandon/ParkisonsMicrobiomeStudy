@@ -1,0 +1,124 @@
+---
+title: 'Step 1: Preprocessing bacterial summary stats'
+author: "Rodrigo Sandon"
+date: "11/27/2021"
+output:
+  pdf_document: default
+---
+
+# Preprocessing Gut Microbiome GWAS Summary Dataset
+
+The first step of this pipeline was to identify datasets we'd be performing our association studies on. Go to <https://mibiogen.gcc.rug.nl/> to find the repository of datasets provided by Kurilshikov et. al, 2021 (<https://pubmed.ncbi.nlm.nih.gov/33462485/>). On this website, you'll find 6 links:
+
+1.  MBG.allHits.p1e4.txt -> top hit variants (p \< 1e-4) for any level of the bacterial hierarchy
+2.  MiBioGen_QmbQTL_summary_phylum.zip (2.4 GB) -> summary statistics of bacterial phyla
+3.  MiBioGen_QmbQTL_summary_class.zip (4.4 GB) -> summary statistics of bacterial classes
+4.  MiBioGen_QmbQTL_summary_order.zip (5.4 GB) ->summary statistics of bacterial orders
+5.  MiBioGen_QmbQTL_summary_family.zip (9.5 GB) -> summary statistics of bacterial families
+6.  MiBioGen_QmbQTL_summary_genus.zip (35.0 GB) -> summary statistics of bacterial genera
+
+In our case, we wanted explore the bacterial genera taxanomy. In latter analyses, we hope to run family, order, class, and phylum taxanomies of bacteria. When you unzip the MiBioGen_QmbQTL_summary_genus.zip, it will look something like this:
+
+-   MiBioGen_QmbQTL_summary_genus:
+
+    -   genus.Clostridiuminnocuumgroup.id.14397.summary.txt.gz
+    -   genus.Eubacteriumbrachygroup.id.11296.summary.txt.gz
+
+Unzip the subfolders and you get a table like this:
+
+| bac  | chr | bp       | rsID      | ref.allele | eff.allele | beta  | SE    | Z weighted | P weighted | N  |Cohorts|
+|------|-----|----------|-----------|------------|------------|-------|-------|------------|------------|--- |-------|
+| name | 5   | 71186626 | rs6890185 | C          | T          | 0.113 | 0.023 | 4.868      | 1.122e-06  |4166| 20    |
+
+Now perform these data pre-processing steps (on sample data):
+
+### Import "reticulate" to incorporate python functionalities.
+```{r, echo = F, results="hide"}
+library(knitr)
+#install.packages("formatR")
+```
+
+```{r, results="hide"}
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+
+library(reticulate)
+use_virtualenv("base")
+use_python("/Volumes/T7Touch/Applications/anaconda3/bin/python")
+```
+
+### Each .gz file of the sum stats will give a txt file, convert these into csv files.
+```{r, results="hide"}
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+
+source_python("Utilities.py")
+sumstats_root <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/
+                  1_Pre-PRS/Part-1/sumstats"
+out_paths <- list(txt_to_csv_files_in_root(sumstats_root))
+print(out_paths)
+```
+### Add a "p" column to each sum stat csv file.
+```{r, results="hide", warning=F}
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+
+add_p_col_to_df <- function(bac_sumstat_path, new_col_name, out_path) {
+
+  df <- read.csv(bac_sumstat_path, header = TRUE, sep = ",")
+  df[new_col_name] <- 2*pnorm(-abs(df$beta/df$SE))
+  eles_of_bac_path <- strsplit(bac_sumstat_path, "/")
+  name_of_bac_sumstat <- eles_of_bac_path[[1]][length(eles_of_bac_path[[1]])]
+  # ^finding the name original name of the bac sumstat file
+
+  new_name <- paste("addedP_", name_of_bac_sumstat, sep = "")
+  new_path <- paste(out_path, new_name, sep = "")
+  #print(new_path)
+  # Export
+  write.csv(df, new_path, row.names = FALSE, quote = FALSE)
+
+}
+
+create_lst_of_file_paths <- function(root_path, files_endswith_str) {
+  files <- list.files(path = root_path, pattern = files_endswith_str, full.names = TRUE, 
+                      recursive = FALSE)
+  return (files)
+}
+
+add_p_col_to_csvs_in_root <- function(root_path, out_path, files_endswith_str, 
+                                      new_col_name, omit_csvs_that_contain) {
+  dir.create(out_path)
+  files <- create_lst_of_file_paths(root_path, files_endswith_str)
+  # Reminder: current files in the list should be in csv format
+
+  for (bac_sumstat_path in files) {
+    print(paste("Working on ...", bac_sumstat_path))
+    start.time <- Sys.time()
+    if (grepl(omit_csvs_that_contain, bac_sumstat_path, fixed = TRUE) == FALSE) { 
+      add_p_col_to_df(bac_sumstat_path, new_col_name, out_path)
+    }
+    end.time <- Sys.time()
+    print(paste("Time to process: ", end.time - start.time))
+  }
+}
+
+
+
+ROOT_PATH <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/
+              1_Pre-PRS/Part-1/sumstats"
+OUT_PATH <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/
+              1_Pre-PRS/Part-1/sumstats-p/" # make sure to add "/" at the end
+
+#perform this function only for the bacterial genera in which the names are known
+add_p_col_to_csvs_in_root(ROOT_PATH, OUT_PATH, files_endswith_str = "*.csv", 
+                          new_col_name = "pDerived", omit_csvs_that_contain = "unknown")
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
