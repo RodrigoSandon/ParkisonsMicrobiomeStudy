@@ -6,7 +6,7 @@ output:
   pdf_document: default
 ---
 
-# Preprocessing Gut Microbiome GWAS Summary Dataset
+# Preprocessing GWAS Summary Datasets
 
 The first step of this pipeline was to identify datasets we'd be performing our association studies on. Go to <https://mibiogen.gcc.rug.nl/> to find the repository of datasets provided by Kurilshikov et. al, 2021 (<https://pubmed.ncbi.nlm.nih.gov/33462485/>). On this website, you'll find 6 links:
 
@@ -33,8 +33,9 @@ Unzip the subfolders and you get a table like this:
 Now perform these data pre-processing steps (on sample data):
 
 ## Import "reticulate" to incorporate python functionalities.
-```{r, echo = F, results="hide"}
+```{r setup, echo = F, results="hide", include = FALSE}
 library(knitr)
+knitr::opts_chunk$set(eval = FALSE)
 #install.packages("formatR")
 ```
 
@@ -44,7 +45,6 @@ knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
 library(reticulate)
 use_virtualenv("base")
 use_python("/Volumes/T7Touch/Applications/anaconda3/bin/python")
-source_python("Utilities.py")
 ```
 
 ## Each .gz file of the sum stats will give a txt file, convert these into csv files.
@@ -55,6 +55,7 @@ knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
 sumstats_root <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/
                   1_Pre-PRS/Part-1/sumstats"
 
+source_python("Utilities.py")
 out_paths <- txt_to_csv_files_in_root(sumstats_root)
 # If this doesn't work, run the py file itself with the process execution
 ```
@@ -89,7 +90,7 @@ create_lst_of_file_paths <- function(root_path, files_endswith_str) {
 
 add_p_col_to_csvs_in_root <- function(root_path, out_path, files_endswith_str, 
                                       new_col_name, omit_csvs_that_contain) {
-  dir.create(out_path) #uncomment if dir hasn't been created yet, else, keep commented
+  dir.create(out_path, showWarnings = FALSE) #uncomment if dir hasn't been created yet, else, keep commented
   files <- create_lst_of_file_paths(root_path, files_endswith_str)
   # Reminder: current files in the list should be in csv format
 
@@ -141,7 +142,7 @@ listdir_to_txt_file(files_lst, txt_out)
 ### Polygenic risk score analyses of 119 bacteria genuses versus PD risk
 
 ## Make a list of summary stats file 
-ls *csv > genuses.txt ## These files have been previously pruned by p-value < 0.05
+ls *csv > /Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-2/genera.txt ## These files have been previously pruned by p-value < 0.05
 
 ## Format these files
 cat genuses.txt | while read LINE 
@@ -175,9 +176,6 @@ do
 grep ":" $LINE.toscore.txt > true_$LINE.toscore.txt
 done
 
-##awk: fatal: cannot open file `addedPgenus.Clostridiuminnocuumgroup.id.14397.summary.txt.csv.temp_formatted.txt' for reading (No such file or directory)
-##awk: fatal: cannot open file `addedPgenus..summary.txt.csv.temp_formatted.txt' for reading (No such file or directory)
-
 ## Calculate scores
 cat genuses_formatted_list.txt | while read LINE 
 do
@@ -187,7 +185,7 @@ done
 
 ## Run PRS (logistic regression) on R
 ```{r}
-install.packages("data.table")
+#install.packages("data.table")
 library("data.table")
 listOfProfiles <- read.table("genuses_formatted_list.txt", header = T)
 names(listOfProfiles) <- c("id")
@@ -254,6 +252,10 @@ write.table(outPut, "Genus_PRS.tab", quote = F, sep = "\t", row.names = F)
 # 
 # Number of Fisher Scoring iterations: 4
 ```
+
+# Linkage Disequilibirum Score Regression (LDSC) Analysis
+
+## Data Preprocessing
 
 
 ## Including Plots
