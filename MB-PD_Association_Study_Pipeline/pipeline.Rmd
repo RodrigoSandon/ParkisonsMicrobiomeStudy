@@ -52,8 +52,7 @@ use_python("/Volumes/T7Touch/Applications/anaconda3/bin/python")
 ```{r, results="hide", warning=T} 
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
 
-sumstats_root <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/
-                  1_Pre-PRS/Part-1/sumstats"
+sumstats_root <- "/Users/rodrigosandon/Documents/GitHub/ParkisonsMicrobiomeStudy/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-1/sumstats"
 
 source_python("Utilities.py")
 out_paths <- txt_to_csv_files_in_root(sumstats_root)
@@ -107,9 +106,8 @@ add_p_col_to_csvs_in_root <- function(root_path, out_path, files_endswith_str,
 
 
 
-ROOT_PATH <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/
-              1_Pre-PRS/Part-1/sumstats"
-OUT_PATH <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-1/sumstats-p/" # make sure to add "/" at the end
+ROOT_PATH <- "/Users/rodrigosandon/Documents/GitHub/ParkisonsMicrobiomeStudy/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-1/sumstats"
+OUT_PATH <- "/Users/rodrigosandon/Documents/GitHub/ParkisonsMicrobiomeStudy/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-1/sumstats-p/" # make sure to add "/" at the end
 
 #perform this function only for the bacterial genera in which the names are known
 add_p_col_to_csvs_in_root(ROOT_PATH, OUT_PATH, files_endswith_str = "*.csv", 
@@ -122,13 +120,13 @@ add_p_col_to_csvs_in_root(ROOT_PATH, OUT_PATH, files_endswith_str = "*.csv",
 ```{r}
 
 #Identify the path where you've modified the sumstats
-sumstats_path <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-1/sumstats-p"
+sumstats_path <- "/Users/rodrigosandon/Documents/GitHub/ParkisonsMicrobiomeStudy/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-1/sumstats-p"
 
 #Define the group of files to identify within ^ this root path
 look_for <- "addedP_"
 
 #Identify path where you'll locate the txt file
-txt_out <- "/Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-2/genera.txt"
+txt_out <- "/Users/rodrigosandon/Documents/GitHub/ParkisonsMicrobiomeStudy/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-2/genera.txt"
 
 source_python("Utilities.py")
 
@@ -142,7 +140,7 @@ listdir_to_txt_file(files_lst, txt_out)
 ### Polygenic risk score analyses of 119 bacteria genuses versus PD risk
 
 ## Make a list of summary stats file 
-ls *csv > /Volumes/T7Touch/NIHSummer2021/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-2/genera.txt ## These files have been previously pruned by p-value < 0.05
+ls *csv > /Users/rodrigosandon/Documents/GitHub/ParkisonsMicrobiomeStudy/MB-PD_Association_Study_Pipeline/1_Pre-PRS/Part-2/genera.txt ## These files have been previously pruned by p-value < 0.05
 
 ## Format these files
 cat genuses.txt | while read LINE 
@@ -187,7 +185,7 @@ done
 ```{r}
 #install.packages("data.table")
 library("data.table")
-listOfProfiles <- read.table("genuses_formatted_list.txt", header = T)
+listOfProfiles <- read.table("genera_formatted_list.txt", header = T)
 names(listOfProfiles) <- c("id")
 covs1 <- fread("/data/LNG/saraB/WGS/noage_toPRSice_phenosAndCovs_renamed.tab", header = T)
 covs2 <- fread("/data/LNG/saraB/concat_HARDCALLS_PD_september_2018_no_cousins.fam", header = F)
@@ -256,6 +254,10 @@ write.table(outPut, "Genus_PRS.tab", quote = F, sep = "\t", row.names = F)
 # Linkage Disequilibirum Score Regression (LDSC) Analysis
 
 ## Data Preprocessing
+```{r}
+pre_ldsc_chrPosRs <- source_python("/Users/rodrigosandon/Documents/GitHub/ParkisonsMicrobiomeStudy/MB-PD_Association_Study_Pipeline/3_LD_Score_Regression/chrPosRs.tab")
+```
+
 
 
 ## Including Plots
