@@ -545,6 +545,156 @@ for (i in files) {
 }
 ```
 
+# Generalised Summary-data-based Mendelian Randomisation
+
+## Analysis for each bacterial taxa hit
+```{r}
+library("gsmr")
+library("dplyr")
+
+allo_sumstats <- fread("/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/Alloprevotella.id.961.txt",header=T,sep=" ")
+cand_sumstats <- fread("/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/CandidatusSoleaferrea.id.11350.txt",header=T,sep=" ")
+
+meta5_pd <- fread("/Volumes/T7Touch/NIHSummer2021/Code/Colocolization/META5_all_with_rsid.tab",header=T,sep="\t")
+
+merge1 <- merge(allo_sumstats, meta5_pd, by="rsID")
+hits_allo <- merge1[merge1$`P-value` < 0.0005, ]
+hits_allo2 <- hits_allo[hits_allo$`p_bac` < 0.0005, ]
+write.table(hits_allo2, file = "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/Alloprevotella.id.961.tab", quote = F, row.names = F, sep = "\t")
+
+
+merge2 <- merge(cand_sumstats, meta5_pd, by="rsID")
+hits_cand <- merge2[merge2$`P-value` < 0.0005, ]
+hits_cand2 <- hits_cand[hits_cand$`p_bac` < 0.0005, ]
+write.table(hits_cand2, file = "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/CandidatusSoleaferrea.id.11350.tab", quote = F, row.names = F, sep = "\t")
+
+allo <- fread("/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/Alloprevotella.id.961.tab",header=T,sep="\t")
+cand <- fread("/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/CandidatusSoleaferrea.id.11350.tab",header=T,sep="\t")
+
+allo_sub <- allo[,c("rsID", "eff.allele", "ref.allele", "beta.x", "SE", "p_bac", "N", "Effect", "StdErr", "P-value")]
+cand_sub <- cand[,c("rsID", "eff.allele", "ref.allele", "beta.x", "SE", "p_bac", "N", "Effect", "StdErr", "P-value")]
+
+allo_sub <- setNames(allo_sub, c("SNP","a1","a2","bzx","bzx_se","bzx_pval","bzx_n","bzy","bzy_se","bzy_pval"))
+cand_sub <- setNames(cand_sub, c("SNP","a1","a2","bzx","bzx_se","bzx_pval","bzx_n","bzy","bzy_se","bzy_pval"))
+
+write.table(allo_sub, file = "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/Alloprevotella.id.961.csv", quote = F, row.names = F, sep = ",")
+write.table(cand_sub, file = "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/ScoreFilesButMergedWSumstats/CandidatusSoleaferrea.id.11350.csv", quote = F, row.names = F, sep = ",")
+
+# Save the genetic variants and effect alleles in a text file using R
+write.table(allo_sub[,c(1,2)], "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/allo_sub.allele", col.names=F, row.names=F, quote=F)
+write.table(cand_sub[,c(1,2)], "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/cand_sub.allele", col.names=F, row.names=F, quote=F)
+
+# Extract the genotype data from a GWAS dataset using GCTA
+#gcta64 --bfile gsmr_example --extract gsmr_example_snps.allele --update-ref-allele gsmr_example_snps.allele --recode --out gsmr_example
+#ALLOPREVOTELLA
+
+bzx = allo_sub$std_bzx    # SNP effects on the risk factor
+bzx_se = allo_sub$std_bzx_se    # standard errors of bzx
+bzx_pval = allo_sub$bzx_pval   # p-values for bzx
+bzy = allo_sub$bzy    # SNP effects on the disease
+bzy_se = allo_sub$bzy_se    # standard errors of bzy
+bzy_pval = allo_sub$bzy_pval    # p-values for bzy
+n_ref = 7703    # Sample size of the reference sample
+gwas_thresh = 5e-8    # GWAS threshold to select SNPs as the instruments for the GSMR analysis
+single_snp_heidi_thresh = 0.01    # p-value threshold for single-SNP-based HEIDI-outlier analysis
+multi_snp_heidi_thresh = 0.01    # p-value threshold for multi-SNP-based HEIDI-outlier analysis
+nsnps_thresh = 10   # the minimum number of instruments required for the GSMR analysis
+heidi_outlier_flag = T    # flag for HEIDI-outlier analysis
+ld_r2_thresh = 0.05    # LD r2 threshold to remove SNPs in high LD
+ld_fdr_thresh = 0.05   # FDR threshold to remove the chance correlations between the SNP instruments
+gsmr2_beta = 0     # 0 - the original HEIDI-outlier method; 1 - the new HEIDI-outlier method that is currently under development 
+gsmr_results = gsmr(bzx, bzx_se, bzx_pval, bzy, bzy_se, bzy_pval, ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh, single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh, ld_r2_thresh, ld_fdr_thresh, gsmr2_beta)    # GSMR analysis 
+filtered_index=gsmr_results$used_index
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+
+##Getting formatted summ stats
+
+bac1 <- fread("/Volumes/T7Touch/NIHSummer2021/Code/GSMR/bacSumStats_GCTA-COJO_format/Alloprevotella.id.961.ma.txt", header=T,sep = " ")
+bac2 <- fread("/Volumes/T7Touch/NIHSummer2021/Code/GSMR/bacSumStats_GCTA-COJO_format/CandidatusSoleaferrea.id.11350.ma.txt", header=T,sep = " ")
+
+bac1_sub <- bac1[,c("rsID","eff.allele","ref.allele","beta.x","SE","p_bac","N")]
+bac2_sub <- bac2[,c("rsID","eff.allele","ref.allele","beta.x","SE","p_bac","N")]
+
+
+bac1_sub <- setNames(bac1_sub, c("SNP", "A1", "A2", "b", "se", "p", "N"))
+bac2_sub <- setNames(bac2_sub, c("SNP", "A1", "A2", "b", "se", "p", "N"))
+
+write.table(bac1_sub, "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/bacSumStats_GCTA-COJO_format/Alloprevotella.id.961.ma.txt", row.names=F, quote=F,sep = " ")
+write.table(bac2_sub, "/Volumes/T7Touch/NIHSummer2021/Code/GSMR/bacSumStats_GCTA-COJO_format/CandidatusSoleaferrea.id.11350.ma.txt", row.names=F, quote=F,sep = " ")
+```
+
+## Merging SNPs for all bacterial taxa and disease
+```{r}
+library("dplyr")
+library("data.table")
+library("stringr")
+#install.packages("jjb")
+library("jjb")
+##############################################################################################################################
+
+bac_mrqtlfolder_paths <- c()
+bac_mrqtlfolder_paths <-c(bac_mrqtlfolder_paths,"/Volumes/T7Touch/NIHSummer2021/Data/MR-QTL_bacteria/SMR_results_allo")
+bac_mrqtlfolder_paths <-c(bac_mrqtlfolder_paths,"/Volumes/T7Touch/NIHSummer2021/Data/MR-QTL_bacteria/SMR_results_CS") #list of dir for msmr for each bac
+
+pd_mrqtl_path_root_path <- "/Volumes/T7Touch/NIHSummer2021/Data/MR-QTL_bacteria/MR_QTL/"
+
+results_rootpath <- "/Volumes/T7Touch/NIHSummer2021/Data/MR-QTL_bacteria/results3/"
+
+dir.create(results_rootpath)
+
+bacsMRQTLs_pdMRQTLs_mergeFDR <- function(bac_mrqtlfolder_paths,pd_mrqtl_root_path,results_rootpath) {
+  for (i in bac_mrqtlfolder_paths){
+    bac_mrqtls <- list.files(path=bac_mrqtlfolder_paths, pattern="*.msmr", full.names = TRUE, recursive = FALSE)
+    nameBac <- str_split(str_split(i, "/", n = Inf, simplify = TRUE)[[7]], "_", n = Inf, simplify = TRUE)[[3]]
+    #print(paste("Working on",nameBac))
+    
+    dir.create(paste(results_rootpath,nameBac,"_PDmerged",sep=""))
+    for (k in bac_mrqtls) { #going through each .msmr file
+      #example name: /Volumes/T7Touch/NIHSummer2021/Data/MR-QTL_bacteria/SMR_results_CS/CS_chromatin_blood_Bryois_SMR_allChrs.msmr
+      subMRQTL_name <- str_replace(str_split(k, "/", n = Inf, simplify = TRUE)[[8]], paste(nameBac,"_",sep=""),"")
+      
+      pdMRQTL_filepath <- paste(pd_mrqtl_path_root_path,"PD_",subMRQTL_name,sep="") #so i dont need to loop through file system as I can make the name of the mrQTL file for pd
+      #print(paste("MRQTL focused on:",pdMRQTL_filepath))
+      
+      #possibleError <- tryCatch(fread(pdMRQTL_filepath, header=T, sep="\t"), error=function(e) {next}) 
+      if (file.exists(pdMRQTL_filepath) == T) {
+        #REAL WORK
+        bac_mrqtl <- fread(k, header=T, sep="\t")
+        pd_mrqtl <- fread(pdMRQTL_filepath, header=T, sep="\t") #now have both csvs opened
+        
+        #/Volumes/T7Touch/NIHSummer2021/Data/MR-QTL_bacteria/MR_QTL/PD_chromatin_blood_Bryois_SMR_allChrs.msmr
+        nameofMRQTL <- str_replace(paste(nameBac,"_",subMRQTL_name,sep=""),".msmr","")
+        
+        newdf <- merge(bac_mrqtl,pd_mrqtl,by="topSNP") #merging w/ mrqtl
+        #new dir for just this mrqtl cuz will have p filtered and p unfiltered results
+        
+        dir.create(paste(results_rootpath,nameBac,"_PDmerged","/",nameofMRQTL,sep=""))
+        
+        write.table(newdf,paste(results_rootpath,nameBac,"_PDmerged/",nameofMRQTL,"/","FDR_",nameofMRQTL,".csv",sep=""),quote=F,row.names=F,sep=",")
+        
+        #do some p_SMR filtering
+        #newdf$P_fdr_bac <- p.adjust(newdf$`p_SMR_multi.x`, method = "fdr")
+        #newdf$P_fdr_pd <- p.adjust(newdf$`p_SMR_multti.y`, method = "fdr")
+        #hits1 <- newdf[newdf$P_fdr_bac < 0.05, ]
+        #hits2 <- hits1[hits1$P_fdr_pd < 0.05, ]
+        #alpha <- 0.05
+        #hits1 <- newdf[newdf$`p_SMR_multi.x` < alpha, ]
+        #hits2 <- hits1[hits1$`p_SMR_multi.y` < alpha, ]
+        
+        print(paste(nameofMRQTL,"N Rows for MRQTL after p filtering:",nrow(hits2)))
+        if (nrow(hits2) > 0) {
+          print("##########HIT###########")
+        }
+        
+        write.table(hits2,paste(results_rootpath,nameBac,"_PDmerged/",nameofMRQTL,"/",toString(alpha),"_filtered_",nameofMRQTL,".csv",sep=""),quote=F,row.names=F,sep=",")
+        
+      }
+    }
+  }
+}
+
+bacsMRQTLs_pdMRQTLs_mergeFDR(bac_mrqtlfolder_paths,pd_mrqtl_root_path,results_rootpath)
+```
 
 
 ## Including Plots
